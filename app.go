@@ -2,11 +2,12 @@ package main
 
 import (
 	"embed"
-	"github.com/gorilla/websocket"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/websocket"
 )
 
 //go:embed templates/*
@@ -20,7 +21,6 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,7 @@ func main() {
 			"Region": os.Getenv("FLY_REGION"),
 		}
 
-		t.ExecuteTemplate(w, "index.html.tmpl", data)
+		_ = t.ExecuteTemplate(w, "index.html.tmpl", data)
 	})
 	http.HandleFunc("/ws", ws)
 
