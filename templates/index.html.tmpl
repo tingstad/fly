@@ -7,5 +7,22 @@
 {{ if .Region }}
 <h2>I'm running in the {{.Region}} region</h2>
 {{end}}
+<script>
+    let prot = location.protocol == "http:" ? "ws" : "wss";
+    let ws = new WebSocket(prot + "://" + location.host + "/ws");
+    ws.onopen = function(evt) {
+        console.log("OPEN");
+    };
+    ws.onclose = function(evt) {
+        console.log("CLOSE");
+    };
+    ws.onmessage = function(evt) {
+        console.log("RESPONSE: " + evt.data);
+    };
+    ws.onerror = function(evt) {
+        console.log("ERROR: " + evt.data);
+    };
+    setInterval(() => ws.send("hi " + new Date()), 5000);
+</script>
 </body>
 </html>
