@@ -36,6 +36,10 @@ int lives;
 long score;
 int status; // status handled in timer
 
+int weite;
+int level;
+int skill_level;
+
 #define GAME_LOOP 1
 #define GAME_NEXTLEVEL 2
 #define GAME_PAUSED 3
