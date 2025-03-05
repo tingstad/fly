@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.min.css" integrity="sha512-XpXUuzg5afNt1bsgnrOesXP70TLH8tXYYK5sK+Y0UV+YBvJn9EfRFYWy4HT3TVDfH0nl1CO0lwOxIrt2gk9qjg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
 <h1>Hello from Fly R</h1>
 {{ if .Region }}
 <h2>I'm running in the {{.Region}} region</h2>
 {{end}}
+<div id="terminal"></div>
 <script>
+    var term = new Terminal();
+    term.open(document.getElementById('terminal'));
+    term.focus();
+    term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+    term.write('\x1B[?25l');
     let prot = location.protocol == "http:" ? "ws" : "wss";
     let ws = new WebSocket(prot + "://" + location.host + "/ws");
     ws.onopen = function(evt) {
@@ -15,14 +23,17 @@
     };
     ws.onclose = function(evt) {
         console.log("CLOSE");
+        term.write('\x1B[?25h');
     };
     ws.onmessage = function(evt) {
-        console.log("RESPONSE: " + evt.data);
+        term.write(evt.data);
     };
     ws.onerror = function(evt) {
         console.log("ERROR: " + evt.data);
     };
-    setInterval(() => ws.send("hi " + new Date()), 5000);
+    term.onData(e => {
+        ws.send(e);
+    });
 </script>
 </body>
 </html>

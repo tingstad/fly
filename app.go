@@ -2,11 +2,15 @@ package main
 
 import (
 	"embed"
-	"github.com/gorilla/websocket"
+	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+
+	"github.com/gorilla/websocket"
 )
 
 //go:embed templates/*
@@ -14,13 +18,25 @@ var resources embed.FS
 
 var t = template.Must(template.ParseFS(resources, "templates/*"))
 
-var upgrader = websocket.Upgrader{} // use default options
+var upgrader = websocket.Upgrader{}
+var isBSD = false
 
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+	}
 
+	cmd := exec.Command("script", "--version")
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("running script: %v", err)
+	}
+	err := cmd.Wait()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		isBSD = true
+	} else if err != nil {
+		log.Fatalf("awaiting script: %v", err)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +44,7 @@ func main() {
 			"Region": os.Getenv("FLY_REGION"),
 		}
 
-		t.ExecuteTemplate(w, "index.html.tmpl", data)
+		_ = t.ExecuteTemplate(w, "index.html.tmpl", data)
 	})
 	http.HandleFunc("/ws", ws)
 
@@ -36,28 +52,90 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
+type writerFn func(p []byte) (int, error)
+
+func (f writerFn) Write(p []byte) (n int, err error) {
+	return f(p)
+}
+
 func ws(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
+	wsConn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("upgrade:", err)
+		log.Print("upgrading:", err)
 		return
 	}
 	defer func() {
-		if err := c.Close(); err != nil {
-			log.Println("warn: closing ws", err)
+		if err := wsConn.Close(); err != nil {
+			log.Println("warn: closing ws:", err)
 		}
 	}()
-	for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			break
+
+	var args []string
+	if isBSD {
+		args = []string{"-qF", "/dev/null", "ninvaders/nInvaders"}
+	} else {
+		args = []string{"-qfc", "/dist/ninvaders", "/dev/null"}
+	}
+	cmd := exec.Command("script", args...)
+
+	cmd.Stdout = writerFn(func(p []byte) (int, error) {
+		msgType := websocket.TextMessage
+		if err := wsConn.WriteMessage(msgType, p); err != nil {
+			return 0, err
+		} else {
+			return len(p), nil
 		}
-		log.Printf("recv: %s", message)
-		err = c.WriteMessage(mt, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
+	})
+
+	cmdStdin, err := cmd.StdinPipe()
+	if err != nil {
+		fmt.Println("creating stdin pipe:", err)
+		return
+	}
+	defer func() {
+		_ = cmdStdin.Close()
+	}()
+
+	if err := cmd.Start(); err != nil {
+		fmt.Println("starting command:", err)
+		return
+	}
+
+	type message struct {
+		typ  int
+		data []byte
+		err  error
+	}
+
+	quit := make(chan error, 1)
+	input := make(chan message, 1)
+
+	go func() {
+		quit <- cmd.Wait()
+	}()
+	go func() {
+		for {
+			typ, data, err := wsConn.ReadMessage()
+			input <- message{typ, data, err}
+			if err != nil {
+				log.Println("reading:", err)
+				break
+			}
+		}
+	}()
+
+loop:
+	for {
+		select {
+		case done := <-quit:
+			log.Println("cmd done", done)
+			break loop
+		case msg := <-input:
+			if _, err := cmdStdin.Write(msg.data); err != nil {
+				log.Println("writing:", err)
+				break loop
+			}
 		}
 	}
+	log.Println("finished")
 }
