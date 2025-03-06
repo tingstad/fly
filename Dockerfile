@@ -33,7 +33,7 @@ COPY --from=build /build/main ./
 COPY --from=invaders /build/nInvaders ./ninvaders
 
 COPY <<"EOF" run.sh
-    /dist/main
+    OS=Linux /dist/main
 EOF
 
 ENTRYPOINT ["sh", "run.sh"]

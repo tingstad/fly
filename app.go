@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -19,31 +18,20 @@ var resources embed.FS
 var t = template.Must(template.ParseFS(resources, "templates/*"))
 
 var upgrader = websocket.Upgrader{}
-var isBSD = false
+var isLinux = false
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	if system := os.Getenv("OS"); system == "" {
+		log.Fatal("Environment variable OS not set")
+	} else {
+		isLinux = system == "Linux"
 	}
-
-	cmd := exec.Command("script", "--version")
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("running script: %v", err)
-	}
-	err := cmd.Wait()
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		isBSD = true
-	} else if err != nil {
-		log.Fatalf("awaiting script: %v", err)
-	}
+	port := "8080"
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]string{
 			"Region": os.Getenv("FLY_REGION"),
 		}
-
 		_ = t.ExecuteTemplate(w, "index.html.tmpl", data)
 	})
 	http.HandleFunc("/ws", ws)
@@ -71,10 +59,10 @@ func ws(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	var args []string
-	if isBSD {
-		args = []string{"-qF", "/dev/null", "ninvaders/nInvaders"}
-	} else {
+	if isLinux {
 		args = []string{"-qfc", "/dist/ninvaders", "/dev/null"}
+	} else { // BSD
+		args = []string{"-qF", "/dev/null", "ninvaders/nInvaders"}
 	}
 	cmd := exec.Command("script", args...)
 
