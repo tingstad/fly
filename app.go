@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -80,14 +83,36 @@ func ws(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("creating stdin pipe:", err)
 		return
 	}
-	defer func() {
-		_ = cmdStdin.Close()
-	}()
+	defer func() { _ = cmdStdin.Close() }()
 
+	quit := make(chan error)
+	waitCmd := func() func() {
+		var once sync.Once
+		return func() {
+			once.Do(func() {
+				quit <- cmd.Wait()
+				close(quit)
+			})
+		}
+	}()
 	if err := cmd.Start(); err != nil {
 		fmt.Println("starting command:", err)
 		return
 	}
+	defer func() {
+		if !isRunning(cmd) {
+			return
+		}
+		if err := cmd.Process.Signal(syscall.SIGTERM); err == nil {
+			go waitCmd()
+			select {
+			case <-quit:
+				return
+			case <-time.After(2 * time.Second):
+			}
+		}
+		_ = cmd.Process.Kill()
+	}()
 
 	type message struct {
 		typ  int
@@ -95,18 +120,15 @@ func ws(w http.ResponseWriter, r *http.Request) {
 		err  error
 	}
 
-	quit := make(chan error, 1)
 	input := make(chan message, 1)
 
-	go func() {
-		quit <- cmd.Wait()
-	}()
+	go waitCmd()
+
 	go func() {
 		for {
 			typ, data, err := wsConn.ReadMessage()
 			input <- message{typ, data, err}
 			if err != nil {
-				log.Println("reading:", err)
 				break
 			}
 		}
@@ -119,6 +141,10 @@ loop:
 			log.Println("cmd done", done)
 			break loop
 		case msg := <-input:
+			if err := msg.err; err != nil {
+				log.Println("reading:", err)
+				break loop
+			}
 			if _, err := cmdStdin.Write(msg.data); err != nil {
 				log.Println("writing:", err)
 				break loop
@@ -126,4 +152,14 @@ loop:
 		}
 	}
 	log.Println("finished")
+}
+
+func isRunning(cmd *exec.Cmd) bool {
+	if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
+		return false
+	}
+	if cmd.ProcessState != nil && cmd.ProcessState.Success() {
+		return false
+	}
+	return cmd.Process.Signal(syscall.Signal(0)) == nil
 }
