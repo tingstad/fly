@@ -1,17 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<title>Space invaders</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.min.css" integrity="sha512-XpXUuzg5afNt1bsgnrOesXP70TLH8tXYYK5sK+Y0UV+YBvJn9EfRFYWy4HT3TVDfH0nl1CO0lwOxIrt2gk9qjg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+}
+.xterm-screen {
+    margin: 0 auto; /* center horizontally */
+}
+#buttons {
+    width: 864px;
+    margin: 0 auto;
+    display: flex;
+}
+button#space {
+    flex-grow: 2;
+}
+button {
+    padding: 8px 4px;
+}
+</style>
 </head>
 <body>
-<h1>Hello from Fly R</h1>
+<div id="terminal"></div>
+<div id="buttons">
+<button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
+</div>
 {{ if .Region }}
 <h2>I'm running in the {{.Region}} region</h2>
 {{end}}
-<div id="terminal"></div>
 <script>
-    var term = new Terminal();
+    var term = new Terminal({ fontSize: 18 });
     term.open(document.getElementById('terminal'));
     term.focus();
     term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
@@ -33,6 +56,39 @@
     };
     term.onData(e => {
         ws.send(e);
+    });
+    const left = () => ws.send("\u001bOD");
+    const right = () => ws.send("\u001bOC");
+    const space = () => ws.send(" ");
+    let interval;
+    document.getElementById('left').addEventListener("mousedown", function() {
+        left();
+        interval = setInterval(left, 100);
+    });
+    document.getElementById('right').addEventListener("mousedown", function() {
+        right();
+        interval = setInterval(right, 100);
+    });
+    document.getElementById('space').addEventListener("mousedown", function() {
+        space();
+        interval = setInterval(space, 100);
+    });
+    document.addEventListener("mouseup", () => clearInterval(interval));
+    document.addEventListener("mouseleave", () => clearInterval(interval));
+    document.addEventListener('keydown', function (event) {
+        if (event.key === "ArrowLeft" || event.keyCode === 37) {
+            event.preventDefault();
+            left();
+        } else if (event.key === "ArrowRight" || event.keyCode === 39) {
+            event.preventDefault();
+            right();
+        } else if (event.key === " " || event.keyCode === 32) {
+            event.preventDefault();
+            space();
+        } else {
+            return;
+        }
+        term.focus();
     });
 </script>
 </body>
