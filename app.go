@@ -85,16 +85,7 @@ func ws(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = cmdStdin.Close() }()
 
-	quit := make(chan error)
-	waitCmd := func() func() {
-		var once sync.Once
-		return func() {
-			once.Do(func() {
-				quit <- cmd.Wait()
-				close(quit)
-			})
-		}
-	}()
+	quit, waitCmd := initWaitOnce(cmd)
 	if err := cmd.Start(); err != nil {
 		fmt.Println("starting command:", err)
 		return
@@ -152,6 +143,17 @@ loop:
 		}
 	}
 	log.Println("finished")
+}
+
+func initWaitOnce(cmd *exec.Cmd) (chan error, func()) {
+	quit := make(chan error)
+	var once sync.Once
+	return quit, func() {
+		once.Do(func() {
+			quit <- cmd.Wait()
+			close(quit)
+		})
+	}
 }
 
 func isRunning(cmd *exec.Cmd) bool {
