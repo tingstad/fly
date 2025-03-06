@@ -90,20 +90,7 @@ func ws(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("starting command:", err)
 		return
 	}
-	defer func() {
-		if !isRunning(cmd) {
-			return
-		}
-		if err := cmd.Process.Signal(syscall.SIGTERM); err == nil {
-			go waitCmd()
-			select {
-			case <-quit:
-				return
-			case <-time.After(2 * time.Second):
-			}
-		}
-		_ = cmd.Process.Kill()
-	}()
+	defer shutdown(cmd, waitCmd, quit)
 
 	type message struct {
 		typ  int
@@ -143,6 +130,21 @@ loop:
 		}
 	}
 	log.Println("finished")
+}
+
+func shutdown(cmd *exec.Cmd, waitCmd func(), quit chan error) {
+	if !isRunning(cmd) {
+		return
+	}
+	if err := cmd.Process.Signal(syscall.SIGTERM); err == nil {
+		go waitCmd()
+		select {
+		case <-quit:
+			return
+		case <-time.After(2 * time.Second):
+		}
+	}
+	_ = cmd.Process.Kill()
 }
 
 func initWaitOnce(cmd *exec.Cmd) (chan error, func()) {
