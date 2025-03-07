@@ -31,7 +31,9 @@ button {
 <button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
 </div>
 <script>
-    var term = new Terminal({ fontSize: 18 });
+    const params = new URLSearchParams(window.location.search);
+    const fontSize = params.get("s") || 18;
+    var term = new Terminal({ fontSize });
     term.open(document.getElementById('terminal'));
     term.focus();
     term.write('Hello, \x1B[1;3;31World\x1B[0m! $ ')
