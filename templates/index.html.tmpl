@@ -88,11 +88,17 @@ button {
     if (showButtons)
         document.getElementById('buttons').style.display = "flex";
     let interval;
-    const repeat = (fn) => () => { fn(); interval = setInterval(fn, 100); };
+    const repeat = (fn) => (event) => {
+        event.preventDefault();
+        fn();
+        interval = setInterval(fn, 100);
+    };
     if (isTouchDevice) {
         document.getElementById('left').addEventListener('touchstart', repeat(left));
         document.getElementById('right').addEventListener('touchstart', repeat(right));
         document.getElementById('space').addEventListener('touchstart', repeat(space));
+        for (let btn of [ "left", "right", "space" ])
+            document.getElementById(btn).addEventListener('touchend', (e) => e.preventDefault());
     } else {
         document.getElementById('left').addEventListener('mousedown', repeat(left));
         document.getElementById('right').addEventListener('mousedown', repeat(right));
