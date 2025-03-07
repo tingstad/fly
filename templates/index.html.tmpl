@@ -56,7 +56,7 @@ button {
         console.log("fontSize", fontSize);
         return fontSize;
     };
-    window.addEventListener('resize', () => {
+    (window.visualViewport || window).addEventListener('resize', () => {
         term.options.fontSize = calculateSize();
     });
     var term = new Terminal({ fontSize: calculateSize() });
