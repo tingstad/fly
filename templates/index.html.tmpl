@@ -70,7 +70,7 @@ The object of the game is to shoot all the aliens (the multi-coloured moving thi
     var term = new Terminal({ fontSize: calculateSize() });
     term.open(document.getElementById('terminal'));
     term.focus();
-    term.write('Hello, \x1B[1;3;31World\x1B[0m! $ ')
+    term.write('Hello, \x1B[1;3;31mWorld\x1B[0m! $ ')
     let start = false;
     function createWs() {
         const prot = location.protocol == "http:" ? "ws" : "wss";
