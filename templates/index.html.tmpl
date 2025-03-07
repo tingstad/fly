@@ -13,9 +13,8 @@ html, body {
     margin: 0 auto; /* center horizontally */
 }
 #buttons {
-    width: 864px;
+    display: none;
     margin: 0 auto;
-    display: flex;
 }
 button#space {
     flex-grow: 2;
@@ -60,6 +59,8 @@ button {
     const right = () => ws.send({{ if .IsLinux }} "\x1b[C" {{else}} "\u001bOC" {{end}});
     const space = () => ws.send(" ");
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints;
+    if (isTouchDevice)
+        document.getElementById('buttons').style.display = "flex";
     let interval;
     const repeat = (fn) => () => { fn(); interval = setInterval(fn, 100); };
     if (isTouchDevice) {
