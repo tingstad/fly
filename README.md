@@ -1,4 +1,4 @@
 
-https://space.ting.st/
+https://space.ting.st
 
 run [ninvaders](https://ninvaders.sourceforge.net) terminal game over websocket
