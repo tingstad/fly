@@ -10,6 +10,8 @@ html, body {
     margin: 0;
     padding: 0;
     background-color: black;
+    color: #D3D3D3;
+    font-family: 'Inconsolata',monospace;
 }
 .xterm-screen {
     margin: 0 auto; /* center horizontally */
@@ -24,12 +26,27 @@ button#space {
 button {
     height: 40px;
 }
+@media all and (min-width: 70em) {
+    .text {
+        width: 70em;
+        margin: 0 auto;
+    }
+}
 </style>
 </head>
 <body>
 <div id="terminal"></div>
 <div id="buttons">
-<button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
+    <button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
+</div>
+<div class="text">
+<p>
+<a href="https://manpages.debian.org/jessie/ninvaders/ninvaders.6">MANUAL</a>: In short, this is a space invaders game written for the ncurses terminal control library. It uses ASCII art to draw everything, and you can play it just about anywhere. Space Invaders over dialup!
+</p><p>
+The object of the game is to shoot all the aliens (the multi-coloured moving things) before they reach the ground. Since these aliens aren't friendly (which is why you're trying to stop them) they will shoot back. Dodge the descending bullets or hang about under the large stationary blocks for cover.
+</p><p>
+<a href="https://github.com/tingstad/fly">SOURCE</a>
+</p>
 </div>
 <script>
     const params = new URLSearchParams(window.location.search);
