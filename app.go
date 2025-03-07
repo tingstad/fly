@@ -32,8 +32,9 @@ func main() {
 	port := "8080"
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		data := map[string]string{
-			"Region": os.Getenv("FLY_REGION"),
+		data := map[string]any{
+			"IsLinux": isLinux,
+			"Region":  os.Getenv("FLY_REGION"),
 		}
 		_ = t.ExecuteTemplate(w, "index.html.tmpl", data)
 	})
