@@ -30,9 +30,27 @@ button {
 <button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
 </div>
 <script>
-    const params = new URLSearchParams(window.location.search);
-    const fontSize = params.get("s") || 18;
-    var term = new Terminal({ fontSize });
+    {{/*
+        12: width: 576px; height: 312px;
+        14: width: 672px; height: 360px;
+        16: width: 768px; height: 408px;
+        18: width: 864px; height: 456px;
+        24: width: 1152px; height: 600px;
+        36: width: 1728px; height: 888px;
+        72: width: 3456px; height: 1752px;
+    */}}
+    const calculateSize = () => {
+        const maxWidth = window.innerWidth;
+        const maxHeight = window.innerHeight;
+        const max = Math.min(maxWidth, maxHeight * 1.85);
+        const fontSize = parseInt(max / 48);
+        console.log("fontSize", fontSize);
+        return fontSize;
+    };
+    window.addEventListener('resize', () => {
+        term.options.fontSize = calculateSize();
+    });
+    var term = new Terminal({ fontSize: calculateSize() });
     term.open(document.getElementById('terminal'));
     term.focus();
     term.write('Hello, \x1B[1;3;31World\x1B[0m! $ ')
