@@ -60,20 +60,23 @@ button {
     const right = () => ws.send({{ if .IsLinux }} "\x1b[C" {{else}} "\u001bOC" {{end}});
     const space = () => ws.send(" ");
     let interval;
-    document.getElementById('left').addEventListener("mousedown", function() {
-        left();
-        interval = setInterval(left, 100);
-    });
-    document.getElementById('right').addEventListener("mousedown", function() {
-        right();
-        interval = setInterval(right, 100);
-    });
-    document.getElementById('space').addEventListener("mousedown", function() {
-        space();
-        interval = setInterval(space, 100);
-    });
-    document.addEventListener("mouseup", () => clearInterval(interval));
-    document.addEventListener("mouseleave", () => clearInterval(interval));
+    for (let eventType of [ "mousedown", "touchstart" ]) {
+        document.getElementById('left').addEventListener(eventType, function() {
+            left();
+            interval = setInterval(left, 100);
+        });
+        document.getElementById('right').addEventListener(eventType, function() {
+            right();
+            interval = setInterval(right, 100);
+        });
+        document.getElementById('space').addEventListener(eventType, function() {
+            space();
+            interval = setInterval(space, 100);
+        });
+    }
+    document.addEventListener('touchend', () => clearInterval(interval));
+    document.addEventListener('mouseup',  () => clearInterval(interval));
+    document.addEventListener('mouseleave', () => clearInterval(interval));
     document.addEventListener('keydown', function (event) {
         if (event.key === "ArrowLeft" || event.keyCode === 37) {
             event.preventDefault();
