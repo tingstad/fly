@@ -45,9 +45,12 @@ button {
         72: width: 3456px; height: 1752px;
     */}}
     const calculateSize = () => {
-        const maxWidth = Math.min(window.innerWidth, document.documentElement.clientWidth);
-        const maxHeight = Math.min(window.innerHeight, document.documentElement.clientHeight)
-             - (showButtons ? 40 : 0);
+        const viewport = window.visualViewport;
+        const maxWidth = Math.min(window.innerWidth, document.documentElement.clientWidth,
+            ...(viewport ? [viewport.width] : []) );
+        const maxHeight = Math.min(window.innerHeight, document.documentElement.clientHeight,
+            ...(viewport ? [viewport.height] : []) )
+            - (showButtons ? 40 : 0);
         const max = Math.min(maxWidth, maxHeight * 1.80);
         const fontSize = parseInt(max / 48);
         console.log("fontSize", fontSize);
