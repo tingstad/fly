@@ -59,20 +59,17 @@ button {
     const left  = () => ws.send({{ if .IsLinux }} "\x1b[D" {{else}} "\u001bOD" {{end}});
     const right = () => ws.send({{ if .IsLinux }} "\x1b[C" {{else}} "\u001bOC" {{end}});
     const space = () => ws.send(" ");
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints;
     let interval;
-    for (let eventType of [ "mousedown", "touchstart" ]) {
-        document.getElementById('left').addEventListener(eventType, function() {
-            left();
-            interval = setInterval(left, 100);
-        });
-        document.getElementById('right').addEventListener(eventType, function() {
-            right();
-            interval = setInterval(right, 100);
-        });
-        document.getElementById('space').addEventListener(eventType, function() {
-            space();
-            interval = setInterval(space, 100);
-        });
+    const repeat = (fn) => { fn(); interval = setInterval(fn, 100); };
+    if (isTouchDevice) {
+        document.getElementById('left').addEventListener('touchstart', repeat(left));
+        document.getElementById('right').addEventListener('touchstart', repeat(right));
+        document.getElementById('space').addEventListener('touchstart', repeat(space));
+    } else {
+        document.getElementById('left').addEventListener('mousedown', repeat(left));
+        document.getElementById('right').addEventListener('mousedown', repeat(right));
+        document.getElementById('space').addEventListener('mousedown', repeat(space));
     }
     document.addEventListener('touchend', () => clearInterval(interval));
     document.addEventListener('mouseup',  () => clearInterval(interval));
