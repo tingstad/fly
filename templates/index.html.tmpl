@@ -21,7 +21,7 @@ button#space {
     flex-grow: 2;
 }
 button {
-    padding: 8px 4px;
+    height: 40px;
 }
 </style>
 </head>
@@ -31,6 +31,9 @@ button {
 <button id="left">&lt;= LEFT</button> <button id="space">SPACE</button> <button id="right">RIGHT =&gt;</button>
 </div>
 <script>
+    const params = new URLSearchParams(window.location.search);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints;
+    const showButtons = isTouchDevice || params.get("k");
     {{/*
         12: width: 576px; height: 312px;
         14: width: 672px; height: 360px;
@@ -41,9 +44,10 @@ button {
         72: width: 3456px; height: 1752px;
     */}}
     const calculateSize = () => {
-        const maxWidth = window.innerWidth;
-        const maxHeight = window.innerHeight;
-        const max = Math.min(maxWidth, maxHeight * 1.85);
+        const maxWidth = Math.min(window.innerWidth, document.documentElement.clientWidth);
+        const maxHeight = Math.min(window.innerHeight, document.documentElement.clientHeight)
+             - (showButtons ? 40 : 0);
+        const max = Math.min(maxWidth, maxHeight * 1.80);
         const fontSize = parseInt(max / 48);
         console.log("fontSize", fontSize);
         return fontSize;
@@ -77,8 +81,7 @@ button {
     const left  = () => ws.send({{ if .IsLinux }} "\x1b[D" {{else}} "\u001bOD" {{end}});
     const right = () => ws.send({{ if .IsLinux }} "\x1b[C" {{else}} "\u001bOC" {{end}});
     const space = () => ws.send(" ");
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints;
-    if (isTouchDevice)
+    if (showButtons)
         document.getElementById('buttons').style.display = "flex";
     let interval;
     const repeat = (fn) => () => { fn(); interval = setInterval(fn, 100); };
