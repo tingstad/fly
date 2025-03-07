@@ -53,7 +53,6 @@ button {
             - (showButtons ? 40 : 0);
         const max = Math.min(maxWidth, maxHeight * 1.80);
         const fontSize = parseInt(max / 48);
-        console.log("fontSize", fontSize);
         return fontSize;
     };
     (window.visualViewport || window).addEventListener('resize', () => {
