@@ -71,22 +71,29 @@ The object of the game is to shoot all the aliens (the multi-coloured moving thi
     term.open(document.getElementById('terminal'));
     term.focus();
     term.write('Hello, \x1B[1;3;31World\x1B[0m! $ ')
-    term.write('\x1B[?25l');
-    let prot = location.protocol == "http:" ? "ws" : "wss";
-    let ws = new WebSocket(prot + "://" + location.host + "/ws");
-    ws.onopen = function(evt) {
-        console.log("OPEN");
-    };
-    ws.onclose = function(evt) {
-        console.log("CLOSE");
-        term.write('\x1B[?25h');
-    };
-    ws.onmessage = function(evt) {
-        term.write(evt.data);
-    };
-    ws.onerror = function(evt) {
-        console.log("ERROR: " + evt.data);
-    };
+    let start = false;
+    function createWs() {
+        const prot = location.protocol == "http:" ? "ws" : "wss";
+        const url = prot + "://" + location.host + "/ws";
+        let ws = new WebSocket(url);
+        ws.onopen = function(evt) {
+            console.log("OPEN");
+            term.write('\x1B[?25l');
+            if (start) { space(); start = false; }
+        };
+        ws.onclose = function(evt) {
+            console.log("CLOSE");
+            term.write('\x1B[?25h');
+        };
+        ws.onmessage = function(evt) {
+            term.write(evt.data);
+        };
+        ws.onerror = function(evt) {
+            console.log("ERROR: " + evt.data);
+        };
+        return ws;
+    }
+    let ws = createWs();
     term.onData(e => {
         ws.send(e);
     });
@@ -99,7 +106,19 @@ The object of the game is to shoot all the aliens (the multi-coloured moving thi
     });
     const left  = () => ws.send({{ if .IsLinux }} "\x1b[D" {{else}} "\u001bOD" {{end}});
     const right = () => ws.send({{ if .IsLinux }} "\x1b[C" {{else}} "\u001bOC" {{end}});
-    const space = () => ws.send(" ");
+    const space = () => {
+        switch (ws.readyState) {
+            case 1: // OPEN
+                ws.send(" ");
+                break;
+            case 0: // CONNECTING
+                start = true;
+                break;
+            default: // CLOSING, CLOSED
+                start = true;
+                ws = createWs();
+        }
+    };
     if (showButtons)
         document.getElementById('buttons').style.display = "flex";
     let interval;
